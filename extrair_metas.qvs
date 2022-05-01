@@ -1,0 +1,30 @@
+caminho_load   = 'lib://Post Linkedin/Metas/Metas.xlsx' // Coloque aqui o caminho para acessar a planilha que será extraída: Conexão/Pasta/Arquivo
+tabela_load    = 'Planilha1'                            // Coloque aqui o nome da aba do arquivo.
+
+caminho_store = 'lib://Post Linkedin/Metas/Metas.qvd'   // Coloque aqui o caminho do arquivo gerado: Conexão/Pasta/Arquivo.
+
+[Metas Temp]:
+LOAD * FROM [$(caminho_load)]
+(ooxml, embedded labels, table is $(tabela_load));
+
+FOR i = 1 TO NOOFFIELDS('Metas Temp')
+
+	[Vendedor Temp]:
+    FIRST 1 LOAD FIELDNAME($(i), 'Metas Temp') AS [Vendedor Temp] RESIDENT [Metas Temp] WHERE FIELDNAME($(i), 'Metas Temp') <> 'Período';
+
+NEXT i
+
+FOR EACH vendedor IN FIELDVALUELIST('Vendedor Temp')
+
+	[Metas]:
+    LOAD
+    	  DATE([Período]) AS [periodo]
+        , '$(vendedor)'   AS [vendedor]
+        , [$(vendedor)]   AS [meta]
+    RESIDENT [Metas Temp];
+
+NEXT vendedor
+
+STORE * FROM [Metas] INTO [$(caminho_store)];
+
+DROP TABLES [Metas Temp], [Vendedor Temp], [Metas];
